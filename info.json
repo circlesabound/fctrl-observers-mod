@@ -1,0 +1,9 @@
+{
+  "name": "fctrl-observers-mod",
+  "version": "0.1.0",
+  "title": "fctrl - Observers",
+  "author": "mozzarella",
+  "factorio_version": "1.1",
+  "dependencies": [ "base >= 1.1", "stdlib >= 1.4.6" ],
+  "description": "Augments speakers to observe and export data to fctrl"
+}
