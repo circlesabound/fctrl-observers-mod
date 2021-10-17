@@ -4,6 +4,33 @@ local Position = require('__stdlib__/stdlib/area/position')
 local table = require('__stdlib__/stdlib/utils/table')
 
 --
+-- Script interface
+--
+
+remote.add_interface("fctrl-observers", {
+    set_discord_users = function(id_to_name_tab)
+
+        -- fix up names for oneshot entities, remove alerting for now missing ids
+        for _, entity in pairs(global.assoc_entities_by_unit_number) do
+            local observer_data = Entity.get_data(entity)
+            if observer_data.oneshot.notif_target_id then
+                -- fix up associated alert target names for oneshot entities
+                if id_to_name_tab[observer_data.oneshot.notif_target_id] then
+                    observer_data.oneshot.notif_target_name = id_to_name_tab[observer_data.oneshot.notif_target_id]
+                else
+                    -- remove notif for now missing ids
+                    observer_data.oneshot.notif_target_id = nil
+                    observer_data.oneshot.notif_target_name = nil
+                end
+            end
+        end
+
+        -- update global cache for discord users
+        global.notif_targets = table.deepcopy(id_to_name_tab)
+    end
+})
+
+--
 -- Non GUI functions
 --
 
@@ -31,9 +58,9 @@ local function should_fire_oneshot(entity, oneshot_data)
 end
 
 local function fire_oneshot(entity, oneshot_data)
-    local out_file = "fctrl_observers/oneshot.json"
     local pos = Position.new(entity.position)
     local tab = {
+        notif_target_id = oneshot_data.notif_target_id,
         position = pos,
         message = oneshot_data.text
     }
@@ -297,6 +324,35 @@ local function gui_create(player_index, observer_data)
         }
     }
 
+    if global.notif_targets then
+        local notif_flow = content_flow.add {
+            type = "flow",
+            direction = "horizontal",
+            style = "inset_frame_container_horizontal_flow_in_tabbed_pane"
+        }
+        notif_flow.add {
+            type = "label",
+            caption = {"fctrl-observers.gui-oneshot-notif-dropdown-label"},
+        }
+        gui_refs.notif_dropdown = notif_flow.add {
+            type = "drop-down",
+            name = "fctrl_observers_oneshot_notif_dropdown",
+            items = { [1] = "" },
+            selected_index = 1,
+            tags = {
+                entity_unit_number = observer_data.unit_number
+            }
+        }
+        for id, name in pairs(global.notif_targets) do
+            gui_refs.notif_dropdown.add_item(name)
+            if oneshot_data.notif_target_id == id then
+                -- the name just added is the one to select
+                gui_refs.notif_dropdown.selected_index = #gui_refs.notif_dropdown.items
+            else
+            end
+        end
+    end
+
     local flow4 = content_flow.add {
         type = "flow",
         direction = "horizontal",
@@ -432,6 +488,7 @@ Event.on_init(function()
     global.players = {}
     global.assoc_entities_by_unit_number = {}
     global.stream_keys = {}
+    global.notif_targets = nil -- this stays nil until populated by remote call
 
     for _, player in pairs(game.players) do
         init_global_for_player(player)
@@ -463,12 +520,14 @@ Event.on_event(defines.events.on_gui_opened, function(event)
             --    populate default data
             --    register unit number mapping to global table
             --    register on_entity_destroyed event
-            oneshot_data = {
+            local oneshot_data = {
                 enabled = false,
                 text = "",
-                fired = false
+                fired = false,
+                notif_target_id = nil,
+                notif_target_name = nil,
             }
-            stream_data = {
+            local stream_data = {
                 enabled = false,
                 agg_type = "avg",
                 key = "",
@@ -527,6 +586,30 @@ Event.on_event(defines.events.on_gui_elem_changed, function(event)
         local entity_unit_number = event.element.tags.entity_unit_number
         local entity = global.assoc_entities_by_unit_number[entity_unit_number]
         gui_update_stream_signal_id(event.player_index, entity, event.element.elem_value)
+    end
+end)
+
+Event.on_event(defines.events.on_gui_selection_state_changed, function(event)
+    if event.element.name == "fctrl_observers_oneshot_notif_dropdown" then
+        local entity_unit_number = event.element.tags.entity_unit_number
+        local entity = global.assoc_entities_by_unit_number[entity_unit_number]
+        local gui_ref = global.players[event.player_index].gui_refs[entity.unit_number]
+        local selected_name = gui_ref.notif_dropdown.get_item(gui_ref.notif_dropdown.selected_index);
+        local mapped_id = nil
+        for id, name in pairs(global.notif_targets) do
+            if name == selected_name then
+                mapped_id = id
+                break
+            end
+        end
+        if mapped_id then
+            local observer_data = Entity.get_data(entity)
+            observer_data.oneshot.notif_target_id = mapped_id
+            observer_data.oneshot.notif_target_name = selected_name
+        else
+            -- something went wrong
+            game.print("error: no associated id for "..selected_name)
+        end
     end
 end)
 
