@@ -46,7 +46,7 @@ end
 
 local function should_fire_oneshot(entity, oneshot_data)
     local ret = false
-    if entity.valid and oneshot_data and not oneshot_data.fired then
+    if entity.valid and entity.energy > 0 and oneshot_data and not oneshot_data.fired then
         local cb = entity.get_control_behavior()
         if cb then
             if cb.circuit_condition.fulfilled and oneshot_data.enabled then
@@ -151,12 +151,17 @@ local function clock_tick(tick)
             fire_oneshot(entity, observer_data.oneshot)
         end
         -- accumulate stream data
-        accumulate(entity, observer_data.stream)
+        if observer_data.stream.enabled and entity.valid and entity.energy > 0 then
+            accumulate(entity, observer_data.stream)
+        end
         -- run aggregation over accumulated stream data every 300 ticks == 5 seconds
         if tick % 300 == 0 then
             if should_send_stream(entity, observer_data.stream) then
                 local msg = aggregate_and_build_stream_msg(entity, observer_data.stream)
-                stream_msgs[msg.key] = msg.value
+                -- only send the message if unpowered
+                if entity.energy > 0 then
+                    stream_msgs[msg.key] = msg.value
+                end
             end
         end
     end
