@@ -142,6 +142,10 @@ local function remove_unique_stream_key(key)
     global.stream_keys[key] = nil
 end
 
+local function refresh_discord_users()
+    print("FCTRL_RPC query discord")
+end
+
 local function clock_tick(tick)
     local stream_msgs = {}
     for _, entity in pairs(global.assoc_entities_by_unit_number) do
@@ -168,6 +172,11 @@ local function clock_tick(tick)
 
     if tick % 300 == 0 then
         send_stream_msgs(stream_msgs)
+    end
+
+    -- refresh discord users every 5 minutes
+    if tick % 18000 == 0 then
+        refresh_discord_users()
     end
 end
 
