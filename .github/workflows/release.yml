@@ -19,6 +19,16 @@ jobs:
           mkdir out
           cp -r locale changelog.txt control.lua info.json LICENCE out
           zip -r "out/fctrl-observers-mod_${{ env.release_version }}.zip" out
+      - name: Create git tag
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tag/${{ env.release_version }}",
+              sha: context.sha
+            })
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
