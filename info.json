@@ -1,9 +1,10 @@
 {
   "name": "fctrl-observers-mod",
   "version": "0.1.0",
-  "title": "fctrl - Observers",
-  "author": "mozzarella",
+  "title": "fctrl - Observability",
+  "author": "github.com/circlesabound",
+  "homepage": "https://github.com/circlesabound/fctrl-observers-mod",
   "factorio_version": "1.1",
   "dependencies": [ "base >= 1.1", "stdlib >= 1.4.6" ],
-  "description": "Augments speakers to observe and export data to fctrl"
+  "description": "Augments programmable speakers to be able to export metrics and alerts"
 }

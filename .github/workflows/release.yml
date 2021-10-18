@@ -1,0 +1,27 @@
+name: Create new release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Extract version
+        run: echo "release_version=$(jq -rj .version info.json) >> $GITHUB_ENV
+      - name: Package zip
+        run: |
+          rm -rf out
+          mkdir out
+          cp -r locale changelog.txt control.lua info.json LICENCE out
+          zip -r "out/fctrl-observers-mod_${{ env.release_version }.zip" out
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ env.release_version }}
+          files: |
+            out/fctrl-observers-mod_${{ env.release_version}}.zip
