@@ -22,7 +22,7 @@ jobs:
       - name: Release
         uses: ncipollo/release-action@v1
         with:
-          commit: $GITHUB_REF
+          commit: ${{ github.ref }}
           tag: ${{ env.release_version }}
           artifacts: out/fctrl-observers-mod_${{ env.release_version }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
