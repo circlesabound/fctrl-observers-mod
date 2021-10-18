@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Extract version
-        run: echo "release_version=$(jq -rj .version info.json) >> $GITHUB_ENV
+        run: echo "release_version=$(jq -rj .version info.json)" >> $GITHUB_ENV
       - name: Package zip
         run: |
           rm -rf out
